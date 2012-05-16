@@ -14,114 +14,138 @@ A sample usage of this library can be found in wpt_batch.py.
 __author__ = 'zhaoq@google.com (Qi Zhao)'
 
 import re
-import urllib
+import urllib, json
 from xml.dom import minidom
 
 
 def __LoadEntity(url, urlopen=urllib.urlopen):
-  """A helper function to load an entity such as an URL.
+	"""A helper function to load an entity such as an URL.
 
-  Args:
-    url: the URL to load
-    urlopen: the callable to be used to load the url
+	Args:
+		url: the URL to load
+		urlopen: the callable to be used to load the url
 
-  Returns:
-    The response message
-  """
-  response = urlopen(url)
-  return response
+	Returns:
+		The response message
+	"""
+	response = urlopen(url)
+	return response
 
 
 def ImportUrls(url_filename):
-  """Load the URLS in the file into memory.
+	"""Load the URLS in the file into memory.
 
-  Args:
-    url_filename: the file name of the list of URLs
+	Args:
+		url_filename: the file name of the list of URLs
 
-  Returns:
-    The list of URLS
-  """
-  url_list = []
-  for line in open(url_filename, 'rb'):
-    # Remove newline and trailing whitespaces
-    url = line.rstrip(' \r\n')
-    if url:
-      url_list.append(url)
-  return url_list
+	Returns:
+		The list of URLS
+	"""
+	url_list = []
+	for line in open(url_filename, 'rb'):
+		# Remove newline and trailing whitespaces
+		url = line.rstrip(' \r\n')
+		if url:
+			url_list.append(url)
+	return url_list
 
 
 def SubmitBatch(url_list, test_params, server_url='http://www.webpagetest.org/',
-                urlopen=urllib.urlopen):
-  """Submit the tests to WebPageTest server.
+								urlopen=urllib.urlopen):
+	"""Submit the tests to WebPageTest server.
 
-  Args:
-    url_list: the list of interested URLs
-    test_params: the user-configured test parameters
-    server_url: the URL of the WebPageTest server
-    urlopen: the callable to be used to load the request
+	Args:
+		url_list: the list of interested URLs
+		test_params: the user-configured test parameters
+		server_url: the URL of the WebPageTest server
+		urlopen: the callable to be used to load the request
 
-  Returns:
-    A dictionary which maps a WPT test id to its URL if submission
-    is successful.
-  """
-  id_url_dict = {}
-  for url in url_list:
-    test_params['url'] = url
-    request = server_url + 'runtest.php?%s' % urllib.urlencode(test_params)
-    response = __LoadEntity(request, urlopen)
-    return_code = response.getcode()
-    if return_code == 200:
-      dom = minidom.parseString(response.read())
-      nodes = dom.getElementsByTagName('statusCode')
-      status = nodes[0].firstChild.wholeText
-      if status == '200':
-        test_id = dom.getElementsByTagName('testId')[0].firstChild.wholeText
-        id_url_dict[test_id] = url
-  return id_url_dict
+	Returns:
+		A dictionary which maps a WPT test id to its URL if submission
+		is successful.
+	"""
+	id_url_dict = {}
+	for url in url_list:
+		test_params['url'] = url
+		request = server_url + 'runtest.php?%s' % urllib.urlencode(test_params)
+		response = __LoadEntity(request, urlopen)
+		return_code = response.getcode()
+		if return_code == 200:
+			dom = minidom.parseString(response.read())
+			nodes = dom.getElementsByTagName('statusCode')
+			status = nodes[0].firstChild.wholeText
+			if status == '200':
+				test_id = dom.getElementsByTagName('testId')[0].firstChild.wholeText
+				id_url_dict[test_id] = url
+	return id_url_dict
 
 
 def CheckBatchStatus(test_ids, server_url='http://www.webpagetest.org/',
-                     urlopen=urllib.urlopen):
-  """Check the status of tests.
+										 urlopen=urllib.urlopen):
+	"""Check the status of tests.
 
-  Args:
-    test_ids: the list of interested test ids
-    server_url: the URL of the WebPageTest server
-    urlopen: the callable to be used to load the request
+	Args:
+		test_ids: the list of interested test ids
+		server_url: the URL of the WebPageTest server
+		urlopen: the callable to be used to load the request
 
-  Returns:
-    A dictionary where key is the test id and content is its status.
-  """
-  id_status_dict = {}
-  for test_id in test_ids:
-    request = server_url + 'testStatus.php?f=xml&test=' + test_id
-    response = __LoadEntity(request, urlopen)
-    if response.getcode() == 200:
-      dom = minidom.parseString(response.read())
-      nodes = dom.getElementsByTagName('statusCode')
-      status_code = nodes[0].firstChild.wholeText
-      id_status_dict[test_id] = status_code
-  return id_status_dict
+	Returns:
+		A dictionary where key is the test id and content is its status.
+	"""
+	id_status_dict = {}
+	for test_id in test_ids:
+		request = server_url + 'testStatus.php?f=xml&test=' + test_id
+		response = __LoadEntity(request, urlopen)
+		if response.getcode() == 200:
+			dom = minidom.parseString(response.read())
+			nodes = dom.getElementsByTagName('statusCode')
+			status_code = nodes[0].firstChild.wholeText
+			id_status_dict[test_id] = status_code
+	return id_status_dict
 
 
 def GetXMLResult(test_ids, server_url='http://www.webpagetest.org/',
-                 urlopen=urllib.urlopen):
-  """Obtain the test result in XML format.
+								 urlopen=urllib.urlopen):
+	"""Obtain the test result in XML format.
 
-  Args:
-    test_ids: the list of interested test ids
-    server_url: the URL of WebPageTest server
-    urlopen: the callable to be used to load the request
+	Args:
+		test_ids: the list of interested test ids
+		server_url: the URL of WebPageTest server
+		urlopen: the callable to be used to load the request
 
-  Returns:
-    A dictionary where the key is test id and the value is a DOM object of the
-    test result.
-  """
-  id_dom_dict = {}
-  for test_id in test_ids:
-    request = server_url + 'xmlResult/' + test_id + '/'
-    response = __LoadEntity(request, urlopen)
-    if response.getcode() == 200:
-      dom = minidom.parseString(response.read())
-      id_dom_dict[test_id] = dom
-  return id_dom_dict
+	Returns:
+		A dictionary where the key is test id and the value is a DOM object of the
+		test result.
+	"""
+	id_dom_dict = {}
+	for test_id in test_ids:
+		request = server_url + 'xmlResult/' + test_id + '/'
+		response = __LoadEntity(request, urlopen)
+		if response.getcode() == 200:
+			dom = minidom.parseString(response.read())
+			id_dom_dict[test_id] = dom
+	return id_dom_dict
+	
+def GetPageHAR(test_id, server_url='http://www.webpagetest.org/',
+								 urlopen=urllib.urlopen):
+	"""Obtain the page information of test in HAR format.
+
+	Args:
+		test_id: the interested test id
+		server_url: the URL of WebPageTest server
+		urlopen: the callable to be used to load the request
+
+	Returns:
+		The raw string of the page infomation or None
+		
+	Author:
+		chenxm
+	"""
+	id_har_dict = {}
+	request = server_url + 'export.php?test=' + test_id
+	print request
+	response = __LoadEntity(request, urlopen)
+	if response.getcode() == 200:
+		return response.read()
+	else:
+		return None
