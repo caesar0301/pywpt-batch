@@ -1,1 +1,3 @@
-This program intends to do the batch testing with WPT and records the results.
+This program is a sub-tool of WPT which intends to do the batch testing with WPT and records the results.
+
+For the detailed infomation, we refer you to the documentation of WPT (https://sites.google.com/a/webpagetest.org/docs/)
